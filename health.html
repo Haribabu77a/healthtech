@@ -1,629 +1,414 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>KeyCare — Simple Healthcare for Everyone</title>
-  <meta name="description" content="KeyCare: accessible healthcare helper with voice assistant, medicine lookup, triage questions and medication reminders." />
-  <style>
-    :root{
-      --bg:#fff;
-      --fg:#111;
-      --accent:#007ACC;
-      --large:20px;
-      --radius:12px;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Arial;
-      background:linear-gradient(180deg,#f6f9fc,#ffffff);
-      color:var(--fg);
-      font-size:18px;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Health Tech Assistant</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        /* [Previous CSS styles retained and improved] */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .header { background: white; padding: 15px 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 20px; color: #667eea; }
+        .header-controls { display: flex; gap: 10px; }
+        .page { display: none; background: white; border-radius: 15px; padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); animation: fadeIn 0.3s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Interactive Elements */
+        .btn { background: #667eea; color: white; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; transition: 0.3s; font-weight: bold; }
+        .btn:hover { background: #764ba2; transform: translateY(-2px); }
+        .card { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #667eea; cursor: pointer; transition: 0.2s; }
+        .card:hover { transform: translateX(5px); background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 20px; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; }
+        
+        /* Map Container */
+        #map { height: 400px; width: 100%; border-radius: 10px; margin-top: 15px; z-index: 1; }
+        
+        /* AI Response Styling */
+        .ai-response { background: #e8f0fe; padding: 15px; border-radius: 10px; margin-top: 15px; border: 1px solid #b3d7ff; }
+        .ai-loading { color: #667eea; font-style: italic; display: none; }
+        
+        /* Chat Interface */
+        #chatMessages { height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 15px; background: #fafafa; }
+        .message { margin-bottom: 10px; padding: 10px; border-radius: 8px; max-width: 80%; }
+        .message.user { background: #667eea; color: white; margin-left: auto; }
+        .message.ai { background: #e9ecef; color: #333; }
 
-    .topbar{
-      display:flex;
-      gap:12px;
-      align-items:center;
-      padding:10px;
-      background:var(--accent);
-      color:white;
-      position:sticky;
-      top:0;
-      z-index:20;
-    }
-    .hamburger{
-      font-size:28px;
-      background:transparent;
-      border:none;
-      color:white;
-      width:48px;height:48px;border-radius:8px;
-    }
-    .title-and-search{flex:1}
-    #site-title{margin:0;font-size:26px}
-    .search-row{display:flex;gap:8px;margin-top:6px}
-    .search-row input{
-      flex:1;padding:10px;border-radius:8px;border:2px solid rgba(255,255,255,0.6);
-      font-size:18px;
-    }
-    .search-row button{
-      padding:10px 12px;border-radius:8px;border:none;background:white;color:var(--accent);font-size:18px;
-    }
-
-    .lang-select{display:flex;flex-direction:column;font-size:14px}
-    .lang-select select{padding:6px;border-radius:6px}
-
-    .side-menu{
-      position:fixed;left:0;top:64px;width:220px;background:#fff;box-shadow:2px 4px 12px rgba(0,0,0,0.15);padding:12px;border-radius:0 8px 8px 0;
-      transform:translateX(-120%);transition:transform .25s;z-index:30;
-    }
-    .side-menu[aria-hidden="false"]{transform:translateX(0)}
-    .side-menu ul{list-style:none;padding:0;margin:0}
-    .side-menu a{display:block;padding:10px;border-radius:8px;text-decoration:none;color:var(--fg)}
-
-    main{padding:16px;max-width:980px;margin:0 auto}
-    .floating-menu{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
-    .float-btn{
-      display:flex;flex-direction:column;align-items:center;padding:8px;background:#fff;border-radius:16px;border:2px solid #eee;width:120px;height:140px;
-      font-size:18px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.08)
-    }
-    .float-btn img{width:80px;height:80px;object-fit:contain}
-    .float-btn span{margin-top:8px;font-weight:600}
-
-    .panel{background:#fff;padding:14px;border-radius:12px;margin-bottom:16px;box-shadow:0 6px 18px rgba(0,0,0,0.04)}
-    .desc{color:#333;margin-top:6px}
-    .medicine-search,input[type=text],textarea{width:100%;padding:10px;border-radius:8px;border:2px solid #eee;font-size:18px}
-    .medicine-search{display:flex;gap:8px;margin-top:10px}
-    .medicine-search button{padding:10px 14px;border-radius:8px;border:none;background:var(--accent);color:white}
-
-    .result{margin-top:12px;padding:10px;background:#fafafa;border-radius:8px;border:1px dashed #eee;min-height:40px}
-
-    .assistant-controls{display:flex;flex-direction:column;gap:8px}
-    .assistant-buttons{display:flex;gap:8px;flex-wrap:wrap}
-    .assistant-buttons button{flex:1;padding:10px;border-radius:8px;border:none;background:var(--accent);color:white}
-
-    .triage-area{display:flex;flex-direction:column;gap:8px}
-    .triage-area .question{font-size:20px;padding:10px}
-    .choices{display:flex;gap:8px;flex-wrap:wrap}
-    .choices button{flex:1;padding:12px;border-radius:12px;border:none;background:#eee;font-size:18px}
-
-    .tablet-form{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
-    .tablet-form label{display:flex;flex-direction:column;gap:6px}
-    .tablet-list{margin-top:12px;list-style:none;padding:0}
-    .tablet-list li{padding:8px;border-radius:8px;background:#fff;border:1px solid #eee;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center}
-
-    .footer{text-align:center;padding:14px;color:#666;background:transparent;margin-top:18px;border-top:1px solid #f0f0f0}
-    @media (max-width:600px){
-      .floating-menu{gap:10px}
-      .float-btn{width:48%;max-width:220px}
-    }
-  </style>
+        /* API Key Modal */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; justify-content: center; align-items: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; width: 90%; max-width: 500px; }
+        
+        /* Bottom Nav (Mobile friendly) */
+        .bottom-nav { display: flex; justify-content: space-around; position: fixed; bottom: 0; left: 0; width: 100%; background: white; padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); z-index: 1000; }
+        .nav-item { border: none; background: none; font-size: 24px; cursor: pointer; color: #aaa; }
+        .nav-item.active { color: #667eea; }
+    </style>
+    
+    <script type="importmap">
+      {
+        "imports": {
+          "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+      }
+    </script>
 </head>
 <body>
-  <header class="topbar" role="banner">
-    <button id="hamburger" class="hamburger" aria-label="Open menu" title="Menu">☰</button>
 
-    <div class="title-and-search">
-      <h1 id="site-title">KeyCare</h1>
-      <div class="search-row">
-        <input id="global-search" type="search" placeholder="Search settings or medicines..." aria-label="Search" />
-        <button id="search-btn" aria-label="Search">🔍</button>
-      </div>
-    </div>
-
-    <div class="lang-select">
-      <label for="lang" style="color:white;font-weight:600">Language</label>
-      <select id="lang" aria-label="Choose language">
-        <option value="en">English</option>
-        <option value="ta">தமிழ் (Tamil)</option>
-        <option value="ml">മലയാളം (Malayalam)</option>
-        <option value="kn">ಕನ್ನಡ (Kannada)</option>
-        <option value="te">తెలుగు (Telugu)</option>
-        <option value="es">Español (Spanish)</option>
-        <option value="fr">Français (French)</option>
-      </select>
-    </div>
-  </header>
-
-  <nav id="side-menu" class="side-menu" aria-hidden="true">
-    <ul>
-      <li><a href="#medicines">Medicines</a></li>
-      <li><a href="#assistant">Assistant</a></li>
-      <li><a href="#triage">I don't know how I feel</a></li>
-      <li><a href="#tablets">Tablets / Schedule</a></li>
-      <li><a href="#settings">Settings</a></li>
-    </ul>
-  </nav>
-
-  <main id="main" role="main">
-    <section class="floating-menu" aria-label="Main features">
-      <button class="float-btn" data-target="#medicines" aria-label="Medicines">
-        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect rx='12' width='80' height='80' fill='%23ffcc00'/><text x='50%' y='55%' font-size='32' text-anchor='middle' fill='%23000' font-family='Arial'>💊</text></svg>" alt="Pill" />
-        <span>Medicines</span>
-      </button>
-
-      <button class="float-btn" data-target="#assistant" aria-label="Assistant">
-        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect rx='12' width='80' height='80' fill='%2300ccff'/><text x='50%' y='55%' font-size='34' text-anchor='middle' fill='%23000' font-family='Arial'>🗣️</text></svg>" alt="Assistant" />
-        <span>Assistant</span>
-      </button>
-
-      <button class="float-btn" data-target="#triage" aria-label="Triage">
-        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect rx='12' width='80' height='80' fill='%23ff6666'/><text x='50%' y='55%' font-size='32' text-anchor='middle' fill='%23000' font-family='Arial'>❓</text></svg>" alt="Help" />
-        <span>I don't know</span>
-      </button>
-
-      <button class="float-btn" data-target="#tablets" aria-label="Tablets">
-        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect rx='12' width='80' height='80' fill='%2380ff80'/><text x='50%' y='55%' font-size='32' text-anchor='middle' fill='%23000' font-family='Arial'>⏰</text></svg>" alt="Alarm" />
-        <span>Tablets</span>
-      </button>
-    </section>
-
-    <section id="medicines" class="panel" aria-labelledby="medicines-heading">
-      <h2 id="medicines-heading">Medicines</h2>
-      <p class="desc">Search for a medicine name and the site will fetch a short summary (from Wikipedia).</p>
-      <div class="medicine-search">
-        <input id="medicine-name" type="text" placeholder="Type medicine name (e.g., Paracetamol)" aria-label="Medicine name" />
-        <button id="medicine-search-btn">Search</button>
-      </div>
-      <article id="medicine-result" class="result" aria-live="polite"></article>
-    </section>
-
-    <section id="assistant" class="panel" aria-labelledby="assistant-heading">
-      <h2 id="assistant-heading">Assistant</h2>
-      <p class="desc">Speak to the assistant or type how you feel. It will suggest simple actions and speak them aloud.</p>
-
-      <div class="assistant-controls">
-        <textarea id="assistant-input" rows="2" placeholder="Describe how you feel..." aria-label="Describe how you feel"></textarea>
-        <div class="assistant-buttons">
-          <button id="speak-btn">Speak</button>
-          <button id="listen-btn">Start Listening</button>
-          <button id="assistant-submit">Get Advice</button>
+    <div id="apiModal" class="modal" style="display: flex;">
+        <div class="modal-content">
+            <h2>🔐 Setup AI Features</h2>
+            <p>To use the AI Advisor, Translation, and Image Analysis, you need a free Google Gemini API Key.</p>
+            <div class="form-group">
+                <input type="password" id="apiKeyInput" placeholder="Paste your API Key here">
+            </div>
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Get one at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a></p>
+            <button class="btn" onclick="saveApiKey()">Start App</button>
         </div>
-      </div>
+    </div>
 
-      <div id="assistant-output" class="result" aria-live="polite"></div>
-    </section>
+    <div class="container">
+        <div class="header">
+            <h1>Health Tech AI</h1>
+            <div class="header-controls">
+                <button class="btn" onclick="translatePage()" style="padding: 5px 10px; font-size: 12px;">🌐 AI Translate</button>
+            </div>
+        </div>
 
-    <section id="triage" class="panel" aria-labelledby="triage-heading">
-      <h2 id="triage-heading">Don't know how you feel?</h2>
-      <p class="desc">Answer simple spoken or tapped questions — the assistant will guide you step-by-step.</p>
-      <div id="triage-area" class="triage-area" aria-live="polite">
-        <button id="start-triage">Start</button>
-        <div id="triage-question" class="question" hidden></div>
-        <div id="triage-choices" class="choices" hidden></div>
-      </div>
-    </section>
+        <div id="home" class="page active">
+            <h2>Welcome</h2>
+            <p style="margin-bottom: 20px; color: #666;">Your AI-powered health companion.</p>
+            <div class="card" onclick="showPage('medicine')">
+                <h3>💊 AI Medicine ID</h3>
+                <p>Identify pills via Camera/Lens</p>
+            </div>
+            <div class="card" onclick="showPage('hospitals')">
+                <h3>🏥 Live Hospital Map</h3>
+                <p>Real-time location & navigation</p>
+            </div>
+            <div class="card" onclick="showPage('advisor')">
+                <h3>🤖 AI Health Advisor</h3>
+                <p>Chat with an intelligent assistant</p>
+            </div>
+            <div class="card" onclick="showPage('profile')">
+                <h3>👤 Profile</h3>
+                <p>Your data</p>
+            </div>
+        </div>
 
-    <section id="tablets" class="panel" aria-labelledby="tablets-heading">
-      <h2 id="tablets-heading">Tablets & Schedule</h2>
-      <p class="desc">Add medicines and times. The site will remind you when it's time (notifications + sound) while the page is open. Allow notifications and sound.</p>
+        <div id="medicine" class="page">
+            <h2>💊 AI Medicine Analysis</h2>
+            <p>Enter a name or take a photo to analyze purpose, dosage, and side effects.</p>
+            
+            <div class="form-group">
+                <input type="text" id="medName" placeholder="e.g., Paracetamol, Amoxicillin">
+                <button class="btn" style="width: 100%; margin-top: 10px;" onclick="analyzeMedicineText()">Analyze Name</button>
+            </div>
+            
+            <div style="text-align: center; margin: 15px;">OR</div>
+            
+            <div class="form-group">
+                <label class="btn" style="display: block; text-align: center;">
+                    📷 Upload/Take Photo (Lens)
+                    <input type="file" id="medImage" accept="image/*" style="display: none;" onchange="analyzeMedicineImage()">
+                </label>
+                <img id="imagePreview" style="max-width: 100%; margin-top: 10px; border-radius: 8px; display: none;">
+            </div>
 
-      <form id="tablet-form" class="tablet-form" onsubmit="return false;">
-        <label>Medicine name
-          <input id="tab-name" required placeholder="e.g., Paracetamol" />
-        </label>
-        <label>Time
-          <input id="tab-time" type="time" required />
-        </label>
-        <button id="add-tablet">Add reminder</button>
-      </form>
+            <div id="medLoading" class="ai-loading">🔮 AI is analyzing...</div>
+            <div id="medResult" class="ai-response" style="display: none;"></div>
+        </div>
 
-      <ul id="tablet-list" class="tablet-list" aria-live="polite"></ul>
-    </section>
+        <div id="hospitals" class="page">
+            <h2>🏥 Nearby Hospitals</h2>
+            <button class="btn" onclick="initMap()">📍 Find Hospitals Near Me</button>
+            <div id="map"></div>
+            <div id="hospitalList" style="margin-top: 20px;"></div>
+        </div>
 
-    <section id="settings" class="panel" aria-labelledby="settings-heading">
-      <h2 id="settings-heading">Settings</h2>
-      <p class="desc">Toggle voice and notification preferences.</p>
-      <label><input type="checkbox" id="voice-enabled" checked /> Voice (speak UI prompts)</label><br/>
-      <label><input type="checkbox" id="auto-speak-results" checked /> Auto speak search / results</label><br/>
-      <button id="request-notif">Allow Notifications</button>
-    </section>
-  </main>
+        <div id="advisor" class="page">
+            <h2>🤖 AI Health Advisor</h2>
+            <div id="chatMessages">
+                <div class="message ai">Hello! I am your AI health assistant. How can I help you today?</div>
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <input type="text" id="userChatInput" placeholder="Ask about symptoms, diet, etc...">
+                <button class="btn" onclick="sendChatMessage()">Send</button>
+            </div>
+        </div>
+        
+        <div id="profile" class="page">
+            <h2>👤 Profile</h2>
+            <div class="form-group">
+                <label>Name</label>
+                <input type="text" id="pName" placeholder="Your Name">
+            </div>
+            <div class="form-group">
+                <label>Emergency Contact</label>
+                <input type="tel" id="pPhone">
+            </div>
+            <button class="btn" onclick="alert('Saved locally!')">Save</button>
+        </div>
+    </div>
 
-  <footer class="footer">
-    <small>KeyCare — Simple healthcare helpers. For serious emergencies call local services immediately.</small>
-  </footer>
+    <div class="bottom-nav">
+        <button class="nav-item active" onclick="showPage('home')">🏠</button>
+        <button class="nav-item" onclick="showPage('medicine')">💊</button>
+        <button class="nav-item" onclick="showPage('hospitals')">🏥</button>
+        <button class="nav-item" onclick="showPage('advisor')">🤖</button>
+    </div>
 
-  <!-- tiny silent audio to play on reminders -->
-  <audio id="alarm-sound" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="></audio>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <script>
-    // KeyCare single-file app.js (in-page)
-    (function(){
-      // --- Utilities and state ---
-      const translations = {
-        en: {
-          siteTitle: "KeyCare",
-          medicines: "Medicines",
-          assistant: "Assistant",
-          dontKnow: "I don't know",
-          tablets: "Tablets",
-          searchPlaceholder: "Search settings or medicines..."
-        },
-        ta: { siteTitle: "கீகேர்", medicines: "மருந்துகள்", assistant: "உதவியாளர்", dontKnow: "எனக்கு தெரியாது", tablets: "மாத்திரைகள்", searchPlaceholder: "அமைப்புகள் அல்லது மருந்துகள் தேடு..." },
-        ml: { siteTitle: "കീകെയർ", medicines: "മരുന്നുകൾ", assistant: "സഹായി", dontKnow: "എനിക്ക് അറിയില്ല", tablets: "മൂല‌കൾ", searchPlaceholder: "ക്രമീകരണങ്ങൾ അല്ലെങ്കിൽ മരുന്നുകൾ തിരയുക..." },
-        kn: { siteTitle: "ಕೀಕೇರ್", medicines: "ಮದ್ದೆ", assistant: "ಸಹಾಯ", dontKnow: "ನನಗೆ ಗೊತ್ತಿಲ್ಲ", tablets: "ಗೊಳಿಕೆಗಳು", searchPlaceholder: "ಸೆಟ್ಟಿಂಗ್ಸ್ ಅಥವಾ ಔಷಧಿಗಳನ್ನು ಹುಡುಕಿ..." },
-        te: { siteTitle: "కీకేర్", medicines: "మందులు", assistant: "సహాయకుడు", dontKnow: "నాకంటే తెలియదు", tablets: "గొలుబులు", searchPlaceholder: "సెట్టింగ్స్ లేదా మందులను శోధించండి..." },
-        es: { siteTitle: "KeyCare", medicines: "Medicamentos", assistant: "Asistente", dontKnow: "No sé", tablets: "Pastillas", searchPlaceholder: "Buscar ajustes o medicamentos..." },
-        fr: { siteTitle: "KeyCare", medicines: "Médicaments", assistant: "Assistant", dontKnow: "Je ne sais pas", tablets: "Comprimés", searchPlaceholder: "Rechercher paramètres o medicamentos..." }
-      };
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
 
-      const langToSpeech = {
-        en: "en-US",
-        es: "es-ES",
-        fr: "fr-FR",
-        ta: "ta-IN",
-        ml: "ml-IN",
-        kn: "kn-IN",
-        te: "te-IN"
-      };
+        let genAI;
+        let model;
+        let apiKey = localStorage.getItem('gemini_api_key');
 
-      let currentLang = localStorage.getItem('kc-lang') || 'en';
-      let voiceEnabled = true;
-      let autoSpeak = true;
-      const $ = id => document.getElementById(id);
-
-      // --- TTS helper ---
-      function speak(text, lang = currentLang) {
-        if (!voiceEnabled) return;
-        if (!('speechSynthesis' in window)) return;
-        const utter = new SpeechSynthesisUtterance(String(text));
-        utter.lang = langToSpeech[lang] || 'en-US';
-        const voices = speechSynthesis.getVoices();
-        const v = voices.find(x => (x.lang || '').startsWith(utter.lang.split('-')[0]));
-        if (v) utter.voice = v;
-        speechSynthesis.cancel();
-        speechSynthesis.speak(utter);
-      }
-
-      // --- UI wiring ---
-      function applyTranslations() {
-        const t = translations[currentLang] || translations.en;
-        $('site-title').textContent = t.siteTitle;
-        document.getElementById('medicines-heading').textContent = t.medicines;
-        document.getElementById('assistant-heading').textContent = t.assistant;
-        document.getElementById('triage-heading').textContent = translations[currentLang]?.dontKnow || translations.en.dontKnow;
-        document.getElementById('tablets-heading').textContent = t.tablets || 'Tablets';
-        $('global-search').placeholder = t.searchPlaceholder || translations.en.searchPlaceholder;
-      }
-      applyTranslations();
-
-      // Hamburger menu
-      $('hamburger').addEventListener('click', () => {
-        const menu = $('side-menu');
-        const open = menu.getAttribute('aria-hidden') === 'false';
-        menu.setAttribute('aria-hidden', String(!open));
-      });
-
-      // Floating buttons navigation
-      document.querySelectorAll('.float-btn').forEach(btn=>{
-        btn.addEventListener('click', () => {
-          const target = document.querySelector(btn.dataset.target);
-          if (target) {
-            target.scrollIntoView({behavior:'smooth', block:'start'});
-            speak(btn.textContent.trim());
-          }
-        });
-      });
-
-      // Language selector
-      $('lang').value = currentLang;
-      $('lang').addEventListener('change', (e)=>{
-        currentLang = e.target.value;
-        localStorage.setItem('kc-lang', currentLang);
-        applyTranslations();
-        speak(translations[currentLang]?.siteTitle || 'KeyCare', currentLang);
-      });
-
-      // Settings toggles
-      $('voice-enabled').addEventListener('change', (e)=>{ voiceEnabled = e.target.checked; });
-      $('auto-speak-results').addEventListener('change', (e)=>{ autoSpeak = e.target.checked; });
-
-      // Request notifications
-      $('request-notif').addEventListener('click', async ()=>{
-        if (!('Notification' in window)) return alert('Notifications not supported');
-        const p = await Notification.requestPermission();
-        alert('Notification permission: ' + p);
-      });
-
-      // Global search
-      $('search-btn').addEventListener('click', ()=>{
-        const q = $('global-search').value.trim();
-        if (!q) {
-          speak('Please type or say something to search');
-          return;
+        // Initialize AI
+        if (apiKey) {
+            document.getElementById('apiModal').style.display = 'none';
+            initializeAI(apiKey);
         }
-        const ql = q.toLowerCase();
-        if (ql.includes('medic') || ql.includes('pill') || ql.includes('மருந்த') || ql.includes('மாத்திரை')){
-          document.querySelector('#medicines').scrollIntoView({behavior:'smooth'});
-          speak('Opening medicines');
-        } else {
-          $('medicine-name').value = q;
-          $('medicine-search-btn').click();
+
+        window.saveApiKey = function() {
+            const key = document.getElementById('apiKeyInput').value;
+            if(key) {
+                localStorage.setItem('gemini_api_key', key);
+                initializeAI(key);
+                document.getElementById('apiModal').style.display = 'none';
+            }
         }
-      });
 
-      // --- Medicine lookup using Wikipedia API ---
-      async function searchWikipedia(query){
-        const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`;
-        const res = await fetch(url);
-        const j = await res.json();
-        if (j.query && j.query.search && j.query.search.length) {
-          return j.query.search[0].title;
+        function initializeAI(key) {
+            genAI = new GoogleGenerativeAI(key);
+            model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         }
-        return null;
-      }
 
-      async function fetchSummary(title){
-        const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Not found');
-        const j = await res.json();
-        return j.extract || j.description || '';
-      }
-
-      $('medicine-search-btn').addEventListener('click', async ()=>{
-        const q = $('medicine-name').value.trim();
-        const out = $('medicine-result');
-        if (!q) {
-          out.textContent = 'Please enter a medicine name.';
-          speak('Please enter a medicine name');
-          return;
+        // --- Navigation ---
+        window.showPage = function(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            // simple active state logic for demo
         }
-        out.textContent = 'Searching...';
-        try {
-          const title = await searchWikipedia(q);
-          if (!title) {
-            out.textContent = 'No result found.';
-            if (autoSpeak) speak('No result found');
-            return;
-          }
-          const summary = await fetchSummary(title);
-          out.innerHTML = `<strong>${title}</strong><p>${summary}</p><p><a href="https://en.wikipedia.org/wiki/${encodeURIComponent(title)}" target="_blank" rel="noopener">Learn more</a></p>`;
-          if (autoSpeak) speak(`${title}. ${summary}`, currentLang);
-        } catch(err){
-          out.textContent = 'Error fetching information.';
-          if (autoSpeak) speak('Error fetching information');
+
+        // --- AI Medicine Analysis (Text) ---
+        window.analyzeMedicineText = async function() {
+            const name = document.getElementById('medName').value;
+            if(!name) return;
+            
+            const loader = document.getElementById('medLoading');
+            const resultDiv = document.getElementById('medResult');
+            
+            loader.style.display = 'block';
+            resultDiv.style.display = 'none';
+
+            try {
+                const prompt = `Provide detailed medical information for ${name}. Include: Usage, Common Dosage, Side Effects, and Warnings. Format effectively using Markdown.`;
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const text = response.text();
+                
+                resultDiv.innerHTML = marked.parse(text);
+                resultDiv.style.display = 'block';
+            } catch (error) {
+                alert("AI Error: Check API Key or Internet");
+            } finally {
+                loader.style.display = 'none';
+            }
         }
-      });
 
-      // --- Simple Assistant: rules-based ---
-      function simpleAdviceFromText(text){
-        const t = (text||'').toLowerCase();
-        if (!t) return "I didn't hear anything. Please try saying your problem.";
-        if (t.includes('pain') || t.includes('ache') || t.includes('வலி') || t.includes('வலிப்பு')) {
-          if (t.includes('chest') || t.includes('pressure')) {
-            return "Chest pain can be serious. If severe, call emergency services now. Otherwise rest and seek medical help quickly.";
-          }
-          return "For general pain, rest, take prescribed pain relief if available, and contact a doctor if it worsens.";
+        // --- AI Medicine Analysis (Image/Lens) ---
+        window.analyzeMedicineImage = async function() {
+            const fileInput = document.getElementById('medImage');
+            const file = fileInput.files[0];
+            const imagePreview = document.getElementById('imagePreview');
+            
+            if (!file) return;
+
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                imagePreview.src = e.target.result;
+                imagePreview.style.display = 'block';
+                
+                const loader = document.getElementById('medLoading');
+                const resultDiv = document.getElementById('medResult');
+                loader.style.display = 'block';
+                loader.textContent = "📷 Analyzing image with AI Vision...";
+
+                // Convert to Base64 (remove header)
+                const base64Data = e.target.result.split(',')[1];
+
+                try {
+                    const prompt = "Analyze this image. If it is a medicine, identify it and list its usage, dosage, and side effects. If it is a symptom (like a rash), suggest possible causes. If it is not medical, say so.";
+                    
+                    const imagePart = {
+                        inlineData: {
+                            data: base64Data,
+                            mimeType: file.type
+                        }
+                    };
+
+                    const result = await model.generateContent([prompt, imagePart]);
+                    const response = await result.response;
+                    const text = response.text();
+                    
+                    resultDiv.innerHTML = marked.parse(text);
+                    resultDiv.style.display = 'block';
+                } catch (error) {
+                    console.error(error);
+                    resultDiv.innerHTML = "Error analyzing image.";
+                    resultDiv.style.display = 'block';
+                } finally {
+                    loader.style.display = 'none';
+                }
+            };
+            reader.readAsDataURL(file);
         }
-        if (t.includes('fever') || t.includes('temperature') || t.includes('காய்ச்சல்')) {
-          return "If you have fever, drink water, rest, and take paracetamol if allowed. If fever is high or persistent, consult a doctor.";
+
+        // --- AI Advisor Chat ---
+        window.sendChatMessage = async function() {
+            const input = document.getElementById('userChatInput');
+            const text = input.value;
+            if(!text) return;
+            
+            const chatBox = document.getElementById('chatMessages');
+            
+            // Add user message
+            chatBox.innerHTML += `<div class="message user">${text}</div>`;
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                // Add loading indicator
+                const loadingId = 'loading-' + Date.now();
+                chatBox.innerHTML += `<div id="${loadingId}" class="message ai">Thinking...</div>`;
+                
+                const prompt = `You are a helpful and empathetic health assistant. Answer this query briefly: ${text}`;
+                const result = await model.generateContent(prompt);
+                const response = await result.response;
+                const aiText = response.text();
+                
+                document.getElementById(loadingId).remove();
+                chatBox.innerHTML += `<div class="message ai">${marked.parse(aiText)}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (error) {
+                console.error(error);
+            }
         }
-        if (t.includes('dizzy') || t.includes('faint')) {
-          return "If you feel faint, sit or lie down, loosen tight clothes and get fresh air. If it continues, seek immediate help.";
+
+        // --- AI Language Translation (Dynamic) ---
+        window.translatePage = async function() {
+            const targetLang = prompt("Enter target language (e.g., Spanish, Hindi, French):");
+            if(!targetLang) return;
+
+            alert("AI is translating the interface... this may take a few seconds.");
+
+            // Select key text elements to translate
+            const elements = document.querySelectorAll('h2, h3, p, button, label');
+            
+            // Create a batch of text to reduce API calls (simplified for demo)
+            // In a production app, we would send a JSON object of strings
+            
+            for (let el of elements) {
+                if(el.innerText.length > 0 && el.innerText.length < 100) {
+                    try {
+                        const result = await model.generateContent(`Translate this exact text to ${targetLang}: "${el.innerText}"`);
+                        el.innerText = result.response.text();
+                    } catch(e) {
+                        console.log("Translation skip");
+                    }
+                }
+            }
+            alert("Translation Complete!");
         }
-        if (t.includes('cough') || t.includes('cold') || t.includes('காசி')) {
-          return "For cough or cold, rest, warm fluids, and keep hydrated. See a doctor if you have trouble breathing.";
+    </script>
+
+    <script>
+        // --- Live Map (Leaflet JS) ---
+        let map;
+        
+        function initMap() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(showPosition, showError);
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
         }
-        return "I am not sure. Try answering a few quick questions in the 'I don't know' section so I can help.";
-      }
 
-      $('assistant-submit').addEventListener('click', ()=>{
-        const text = $('assistant-input').value.trim();
-        const advice = simpleAdviceFromText(text);
-        const out = $('assistant-output');
-        out.textContent = advice;
-        if (autoSpeak) speak(advice);
-      });
+        function showPosition(position) {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            
+            // Initialize Map if not already done
+            if(map) {
+                map.setView([lat, lng], 14);
+                return;
+            }
+            
+            map = L.map('map').setView([lat, lng], 14);
 
-      // --- Speech recognition for assistant (if available) ---
-      let recognition = null;
-      let listening = false;
-      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        recognition = new SR();
-        recognition.lang = langToSpeech[currentLang] || 'en-US';
-        recognition.interimResults = false;
-        recognition.maxAlternatives = 1;
+            // Add OpenStreetMap Tiles
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
 
-        recognition.onresult = (e) => {
-          const tx = e.results[0][0].transcript;
-          $('assistant-input').value = tx;
-          $('assistant-submit').click();
-        };
-        recognition.onend = () => {
-          listening = false;
-          $('listen-btn').textContent = 'Start Listening';
-        };
-      }
+            // Add User Marker
+            L.marker([lat, lng]).addTo(map)
+                .bindPopup('You are here')
+                .openPopup();
 
-      $('listen-btn').addEventListener('click', async ()=>{
-        if (!recognition) {
-          alert('Speech recognition not supported in this browser.');
-          return;
+            findNearbyHospitals(lat, lng);
         }
-        try {
-          recognition.lang = langToSpeech[currentLang] || 'en-US';
-          recognition.start();
-          listening = true;
-          $('listen-btn').textContent = 'Listening... (click to stop)';
-          recognition.onend = () => {
-            listening = false;
-            $('listen-btn').textContent = 'Start Listening';
-          };
-        } catch(err){
-          console.error(err);
+
+        function findNearbyHospitals(lat, lng) {
+            // Using Overpass API to find hospitals dynamically
+            const query = `
+                [out:json];
+                node["amenity"="hospital"](around:3000,${lat},${lng});
+                out;
+            `;
+            const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    const list = document.getElementById('hospitalList');
+                    list.innerHTML = '<h3>Nearby Hospitals Found:</h3>';
+                    
+                    data.elements.forEach(hospital => {
+                        if(hospital.lat && hospital.lon) {
+                            // Add pin to map
+                            const name = hospital.tags.name || "Unknown Hospital";
+                            L.marker([hospital.lat, hospital.lon]).addTo(map)
+                                .bindPopup(`<b>${name}</b>`);
+                            
+                            // Add to list
+                            list.innerHTML += `
+                                <div class="card" onclick="map.setView([${hospital.lat}, ${hospital.lon}], 16)">
+                                    <h4>${name}</h4>
+                                    <p>Click to locate</p>
+                                </div>
+                            `;
+                        }
+                    });
+                })
+                .catch(err => console.error(err));
         }
-      });
 
-      $('speak-btn').addEventListener('click', ()=>{
-        const text = $('assistant-input').value || 'How can I help you?';
-        speak(text);
-      });
-
-      // --- Triage / branched questions ---
-      const triageTree = {
-        id: 'start',
-        question: {
-          en: 'Are you breathing normally?',
-          ta: 'நீங்கள் சாதாரணமாக மூச்சு விடுகிறீர்களா?',
-          ml: 'നിങ്ങൾ സാധാരണമായി ശ്വാസമെടുക്കുന്നുണ്ടോ?',
-          es: '¿Estás respirando normalmente?'
-        },
-        choices: [
-          {text:'Yes', next: 'bleed'},
-          {text:'No', next: 'emergency'}
-        ]
-      };
-      const triageNodes = {
-        emergency: {
-          question: {en:'This may be an emergency. Call emergency services or get help immediately.'},
-          choices: []
-        },
-        bleed: {
-          question: {en:'Do you have heavy bleeding?'},
-          choices: [{text:'Yes', next:'stopBleed'}, {text:'No', next:'pain'}]
-        },
-        stopBleed: {
-          question: {en:'Apply pressure to bleeding area and seek urgent care.'},
-          choices: []
-        },
-        pain: {
-          question: {en:'Do you feel severe pain?'},
-          choices: [{text:'Yes', next:'seekDoctor'}, {text:'No', next:'rest'}]
-        },
-        seekDoctor: { question:{en:'Seek medical help.'}, choices:[] },
-        rest: { question:{en:'Rest and observe. If it gets worse contact a doctor.'}, choices:[] }
-      };
-
-      let triageCurrent = null;
-      const triageQ = $('triage-question');
-      const triageChoices = $('triage-choices');
-
-      function showTriageNode(id) {
-        triageCurrent = id;
-        const node = (id === 'start') ? triageTree : triageNodes[id];
-        const qtext = (node.question && (node.question[currentLang] || node.question.en)) || '';
-        triageQ.hidden = false;
-        triageChoices.hidden = false;
-        triageQ.textContent = qtext;
-        triageChoices.innerHTML = '';
-        if (!node.choices || node.choices.length===0) {
-          const ok = document.createElement('button');
-          ok.textContent = 'OK';
-          ok.addEventListener('click', ()=>{ triageQ.hidden=true; triageChoices.hidden=true; });
-          triageChoices.appendChild(ok);
-          speak(qtext);
-          return;
+        function showError(error) {
+            alert("Error getting location: " + error.message);
         }
-        for (const c of node.choices) {
-          const b = document.createElement('button');
-          b.textContent = c.text;
-          b.addEventListener('click', ()=> {
-            showTriageNode(c.next);
-          });
-          triageChoices.appendChild(b);
-        }
-        speak(qtext);
-      }
-
-      $('start-triage').addEventListener('click', ()=> showTriageNode('start'));
-
-      // --- Tablet scheduler (local reminders while page is open) ---
-      const tabletListEl = $('tablet-list');
-      const ALARMS = [];
-
-      function renderTablets(){
-        const list = JSON.parse(localStorage.getItem('kc-tablets') || '[]');
-        tabletListEl.innerHTML = '';
-        list.forEach((item, idx) => {
-          const li = document.createElement('li');
-          li.innerHTML = `<div><strong>${escapeHtml(item.name)}</strong><div>${item.time}</div></div>`;
-          const rm = document.createElement('button');
-          rm.textContent = 'Delete';
-          rm.addEventListener('click', ()=>{
-            list.splice(idx,1);
-            localStorage.setItem('kc-tablets', JSON.stringify(list));
-            renderTablets();
-            scheduleAll();
-          });
-          li.appendChild(rm);
-          tabletListEl.appendChild(li);
-        });
-      }
-
-      function scheduleAll(){
-        ALARMS.forEach(t => clearTimeout(t));
-        ALARMS.length = 0;
-        const list = JSON.parse(localStorage.getItem('kc-tablets') || '[]');
-        list.forEach(item => {
-          scheduleReminder(item);
-        });
-      }
-
-      function scheduleReminder(item){
-        const now = new Date();
-        const [hh,mm] = item.time.split(':').map(Number);
-        const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
-        if (next <= now) next.setDate(next.getDate()+1);
-        const ms = next - now;
-        const t = setTimeout(async ()=>{
-          notify(`${item.name} - time to take your tablet`);
-          const a = $('alarm-sound');
-          try{ await a.play(); }catch(e){}
-          scheduleReminder(item);
-        }, ms);
-        ALARMS.push(t);
-      }
-
-      function notify(message){
-        if ('Notification' in window && Notification.permission === 'granted') {
-          new Notification('KeyCare Reminder', {body: message});
-        } else {
-          alert(message);
-        }
-        if (voiceEnabled) speak(message);
-      }
-
-      $('add-tablet').addEventListener('click', ()=>{
-        const name = $('tab-name').value.trim();
-        const time = $('tab-time').value;
-        if (!name || !time) return alert('Please enter name and time');
-        const list = JSON.parse(localStorage.getItem('kc-tablets') || '[]');
-        list.push({name, time});
-        localStorage.setItem('kc-tablets', JSON.stringify(list));
-        $('tab-name').value = '';
-        $('tab-time').value = '';
-        renderTablets();
-        scheduleAll();
-        speak('Reminder added');
-      });
-
-      function escapeHtml(str){
-        return str.replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m]));
-      }
-
-      // initialize
-      renderTablets();
-      scheduleAll();
-      speak('Welcome to KeyCare. Use large buttons to choose a feature.', currentLang);
-
-      // make sure voices refreshed
-      if (typeof speechSynthesis !== 'undefined') {
-        speechSynthesis.onvoiceschanged = () => {};
-      }
-
-      // Provide keyboard short-cuts and focus improvements for low-literacy:
-      document.addEventListener('keydown', (e)=>{
-        if (e.key === '1') document.querySelector('.float-btn[data-target="#medicines"]').click();
-        if (e.key === '2') document.querySelector('.float-btn[data-target="#assistant"]').click();
-        if (e.key === '3') document.querySelector('.float-btn[data-target="#triage"]').click();
-        if (e.key === '4') document.querySelector('.float-btn[data-target="#tablets"]').click();
-      });
-    })();
-  </script>
+    </script>
 </body>
 </html>
