@@ -3,682 +3,627 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>KeyCare — Accessible Patient Care</title>
+  <title>KeyCare — Simple Healthcare for Everyone</title>
+  <meta name="description" content="KeyCare: accessible healthcare helper with voice assistant, medicine lookup, triage questions and medication reminders." />
   <style>
     :root{
-      --primary:#0b79d0;
-      --accent:#ff6b6b;
-      --bg: #f7fbff;
-      --card:#fff;
-      --muted:#666;
-      --big:clamp(18px,3.5vw,26px);
-      --med:clamp(14px,2.2vw,18px);
-      --pad:16px;
+      --bg:#fff;
+      --fg:#111;
+      --accent:#007ACC;
+      --large:20px;
+      --radius:12px;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;
-      font-family: system-ui, "Segoe UI", Roboto, Arial;
-      background:linear-gradient(180deg,#eaf6ff, #f7fbff);
-      color:#111;
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      padding-bottom:40px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans", Arial;
+      background:linear-gradient(180deg,#f6f9fc,#ffffff);
+      color:var(--fg);
+      font-size:18px;
     }
 
-    /* Header */
-    header{
+    .topbar{
       display:flex;
       gap:12px;
       align-items:center;
-      padding:12px var(--pad);
-      background:var(--card);
-      box-shadow:0 2px 8px rgba(11,25,40,0.06);
-      position:sticky; top:0; z-index:50;
+      padding:10px;
+      background:var(--accent);
+      color:white;
+      position:sticky;
+      top:0;
+      z-index:20;
     }
     .hamburger{
-      width:46px;height:46px;border-radius:10px;background:linear-gradient(180deg,#fff,#f1f7ff);
-      display:inline-grid;place-items:center;cursor:pointer;border:2px solid #e6f0fb;
+      font-size:28px;
+      background:transparent;
+      border:none;
+      color:white;
+      width:48px;height:48px;border-radius:8px;
     }
-    .hamburger:focus{outline:3px solid rgba(11,121,208,0.18)}
-    .hamburger svg{width:22px;height:22px;fill:var(--primary)}
-    h1{font-size:var(--big);margin:0 8px;color:var(--primary);flex:0 0 auto}
-    .search-wrap{
-      margin-left:8px;flex:1;display:flex;align-items:center;gap:8px;
-      background:#fff;border-radius:12px;padding:8px 12px;border:1px solid #e6f0fb;
+    .title-and-search{flex:1}
+    #site-title{margin:0;font-size:26px}
+    .search-row{display:flex;gap:8px;margin-top:6px}
+    .search-row input{
+      flex:1;padding:10px;border-radius:8px;border:2px solid rgba(255,255,255,0.6);
+      font-size:18px;
     }
-    .search-wrap input[type="search"]{
-      border:0;outline:none;font-size:var(--med);width:100%;
+    .search-row button{
+      padding:10px 12px;border-radius:8px;border:none;background:white;color:var(--accent);font-size:18px;
     }
-    .controls{display:flex;gap:8px;align-items:center}
-    select.lang{padding:8px;border-radius:10px;border:1px solid #e6f0fb;background:white;font-size:var(--med)}
-    button.icon-btn{padding:8px 10px;border-radius:10px;border:1px solid #e6f0fb;background:white;cursor:pointer}
 
-    /* Main layout */
-    .container{max-width:1100px;margin:18px auto;padding:0 var(--pad)}
-    .hero{
-      background:linear-gradient(90deg,#ffffff 0%, #f0f8ff 100%);
-      border-radius:14px;padding:18px;display:flex;gap:16px;align-items:center;
-      box-shadow:0 6px 24px rgba(11,121,208,0.06)
+    .lang-select{display:flex;flex-direction:column;font-size:14px}
+    .lang-select select{padding:6px;border-radius:6px}
+
+    .side-menu{
+      position:fixed;left:0;top:64px;width:220px;background:#fff;box-shadow:2px 4px 12px rgba(0,0,0,0.15);padding:12px;border-radius:0 8px 8px 0;
+      transform:translateX(-120%);transition:transform .25s;z-index:30;
     }
-    .hero-visual{width:140px;height:140px;border-radius:14px;background:linear-gradient(135deg,var(--primary),#2d9bf0);display:grid;place-items:center;color:white;font-size:40px}
-    .hero-content h2{margin:0;font-size:28px;color:var(--primary)}
-    .hero-content p{margin:8px 0;color:var(--muted);font-size:var(--med)}
+    .side-menu[aria-hidden="false"]{transform:translateX(0)}
+    .side-menu ul{list-style:none;padding:0;margin:0}
+    .side-menu a{display:block;padding:10px;border-radius:8px;text-decoration:none;color:var(--fg)}
 
-    /* Floating menu */
-    .float-menu{display:flex;gap:14px;justify-content:center;margin:22px 0}
-    .float-item{
-      width:140px;height:140px;border-radius:18px;background:var(--card);display:flex;flex-direction:column;align-items:center;
-      justify-content:center;gap:10px;box-shadow:0 6px 18px rgba(11,25,40,0.06);cursor:pointer;border:1px solid #eef6ff;
-      text-align:center;padding:12px;
+    main{padding:16px;max-width:980px;margin:0 auto}
+    .floating-menu{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+    .float-btn{
+      display:flex;flex-direction:column;align-items:center;padding:8px;background:#fff;border-radius:16px;border:2px solid #eee;width:120px;height:140px;
+      font-size:18px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.08)
     }
-    .float-item:active{transform:scale(.98)}
-    .float-item:focus{outline:3px solid rgba(11,121,208,0.18)}
-    .float-item img{width:56px;height:56px;object-fit:contain}
-    .float-item .label{font-size:16px;color:var(--primary);font-weight:600}
+    .float-btn img{width:80px;height:80px;object-fit:contain}
+    .float-btn span{margin-top:8px;font-weight:600}
 
-    /* Sections */
-    section{margin-top:18px}
-    .card{background:var(--card);padding:14px;border-radius:12px;box-shadow:0 3px 12px rgba(11,25,40,0.04)}
-    .medicine-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:12px}
-    .med{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:10px;border:1px solid #f1f7ff;background:linear-gradient(180deg,#fff,#fcfeff)}
-    .med img{width:46px;height:46px}
-    .med-title{font-weight:700;color:#0b79d0}
-    .med-desc{font-size:13px;color:var(--muted)}
+    .panel{background:#fff;padding:14px;border-radius:12px;margin-bottom:16px;box-shadow:0 6px 18px rgba(0,0,0,0.04)}
+    .desc{color:#333;margin-top:6px}
+    .medicine-search,input[type=text],textarea{width:100%;padding:10px;border-radius:8px;border:2px solid #eee;font-size:18px}
+    .medicine-search{display:flex;gap:8px;margin-top:10px}
+    .medicine-search button{padding:10px 14px;border-radius:8px;border:none;background:var(--accent);color:white}
 
-    /* Chat/assistant */
-    .chat-area{display:flex;flex-direction:column;gap:10px}
-    .transcript{min-height:160px;border-radius:10px;padding:12px;border:1px dashed #e6f0fb;background:#fff}
-    .big-btn{display:inline-flex;align-items:center;gap:8px;padding:12px 14px;border-radius:12px;background:linear-gradient(90deg,var(--primary),#2d9bf0);color:white;border:none;font-size:16px;cursor:pointer}
-    .big-btn.voice{background:linear-gradient(90deg,var(--accent),#ff8b8b)}
-    .choices{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
-    .choice{padding:12px 14px;border-radius:12px;background:#fff;border:1px solid #e6f0fb;cursor:pointer;font-weight:700;color:var(--primary)}
+    .result{margin-top:12px;padding:10px;background:#fafafa;border-radius:8px;border:1px dashed #eee;min-height:40px}
 
-    /* footer */
-    footer{text-align:center;margin-top:28px;color:var(--muted);font-size:13px}
+    .assistant-controls{display:flex;flex-direction:column;gap:8px}
+    .assistant-buttons{display:flex;gap:8px;flex-wrap:wrap}
+    .assistant-buttons button{flex:1;padding:10px;border-radius:8px;border:none;background:var(--accent);color:white}
 
-    /* Responsive */
-    @media (max-width:640px){
-      .hero{flex-direction:column;align-items:flex-start}
-      .float-item{width:120px;height:120px}
+    .triage-area{display:flex;flex-direction:column;gap:8px}
+    .triage-area .question{font-size:20px;padding:10px}
+    .choices{display:flex;gap:8px;flex-wrap:wrap}
+    .choices button{flex:1;padding:12px;border-radius:12px;border:none;background:#eee;font-size:18px}
+
+    .tablet-form{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+    .tablet-form label{display:flex;flex-direction:column;gap:6px}
+    .tablet-list{margin-top:12px;list-style:none;padding:0}
+    .tablet-list li{padding:8px;border-radius:8px;background:#fff;border:1px solid #eee;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+
+    .footer{text-align:center;padding:14px;color:#666;background:transparent;margin-top:18px;border-top:1px solid #f0f0f0}
+    @media (max-width:600px){
+      .floating-menu{gap:10px}
+      .float-btn{width:48%;max-width:220px}
     }
   </style>
 </head>
 <body>
-  <!-- Header -->
-  <header>
-    <button id="hamburger" class="hamburger" aria-label="Menu" title="Menu">
-      <!-- simple hamburger icon -->
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v2H3zM3 11h18v2H3zM3 16h18v2H3z"/></svg>
-    </button>
+  <header class="topbar" role="banner">
+    <button id="hamburger" class="hamburger" aria-label="Open menu" title="Menu">☰</button>
 
-    <h1 id="brand">KeyCare</h1>
-
-    <div class="search-wrap" role="search" aria-label="Search settings">
-      <svg width="20" height="20" viewBox="0 0 24 24" style="opacity:.6"><path fill="#0b79d0" d="M21 20l-5.6-5.6a7 7 0 10-1.4 1.4L20 21zM10 16a6 6 0 110-12 6 6 0 010 12z"/></svg>
-      <input id="topSearch" type="search" placeholder="Search settings (or say help)" aria-label="Search settings" />
-      <div class="controls">
-        <select id="langSelect" class="lang" aria-label="Select language">
-          <option value="en" selected>English 🇬🇧</option>
-          <option value="hi">हिन्दी 🇮🇳</option>
-          <option value="es">Español 🇪🇸</option>
-        </select>
-        <button id="voiceToggle" class="icon-btn" title="Toggle voice assistant" aria-pressed="false" aria-label="Toggle voice assistant">🎤</button>
+    <div class="title-and-search">
+      <h1 id="site-title">KeyCare</h1>
+      <div class="search-row">
+        <input id="global-search" type="search" placeholder="Search settings or medicines..." aria-label="Search" />
+        <button id="search-btn" aria-label="Search">🔍</button>
       </div>
+    </div>
+
+    <div class="lang-select">
+      <label for="lang" style="color:white;font-weight:600">Language</label>
+      <select id="lang" aria-label="Choose language">
+        <option value="en">English</option>
+        <option value="ta">தமிழ் (Tamil)</option>
+        <option value="ml">മലയാളം (Malayalam)</option>
+        <option value="kn">ಕನ್ನಡ (Kannada)</option>
+        <option value="te">తెలుగు (Telugu)</option>
+        <option value="es">Español (Spanish)</option>
+        <option value="fr">Français (French)</option>
+      </select>
     </div>
   </header>
 
-  <main class="container" id="main">
-    <!-- Hero -->
-    <div class="hero card" aria-labelledby="welcomeTitle">
-      <div class="hero-visual" aria-hidden="true">🩺</div>
-      <div class="hero-content">
-        <h2 id="welcomeTitle">Welcome to KeyCare</h2>
-        <p id="welcomeDesc">Large icons, voice assistant and language switch for easy use.</p>
-        <div style="margin-top:8px">
-          <small style="color:var(--muted)">Tip: Tap an icon below or press the microphone to speak.</small>
-        </div>
-      </div>
-    </div>
+  <nav id="side-menu" class="side-menu" aria-hidden="true">
+    <ul>
+      <li><a href="#medicines">Medicines</a></li>
+      <li><a href="#assistant">Assistant</a></li>
+      <li><a href="#triage">I don't know how I feel</a></li>
+      <li><a href="#tablets">Tablets / Schedule</a></li>
+      <li><a href="#settings">Settings</a></li>
+    </ul>
+  </nav>
 
-    <!-- Floating menu -->
-    <div class="float-menu" role="navigation" aria-label="Main features">
-      <button class="float-item" id="btnMedicine" aria-label="Medicine information">
-        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect rx='12' width='64' height='64' fill='%230b79d0'/><text x='50%' y='54%' font-size='30' text-anchor='middle' fill='white' font-family='Arial'>💊</text></svg>" alt="medicine icon" />
-        <div class="label" id="lblMed">Medicines</div>
+  <main id="main" role="main">
+    <section class="floating-menu" aria-label="Main features">
+      <button class="float-btn" data-target="#medicines" aria-label="Medicines">
+        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect rx='12' width='80' height='80' fill='%23ffcc00'/><text x='50%' y='55%' font-size='32' text-anchor='middle' fill='%23000' font-family='Arial'>💊</text></svg>" alt="Pill" />
+        <span>Medicines</span>
       </button>
 
-      <button class="float-item" id="btnAssist" aria-label="Describe how you feel">
-        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect rx='12' width='64' height='64' fill='%23ff8b8b'/><text x='50%' y='54%' font-size='30' text-anchor='middle' fill='white' font-family='Arial'>🗣️</text></svg>" alt="assistant icon" />
-        <div class="label" id="lblAssist">Assistant</div>
+      <button class="float-btn" data-target="#assistant" aria-label="Assistant">
+        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect rx='12' width='80' height='80' fill='%2300ccff'/><text x='50%' y='55%' font-size='34' text-anchor='middle' fill='%23000' font-family='Arial'>🗣️</text></svg>" alt="Assistant" />
+        <span>Assistant</span>
       </button>
 
-      <button class="float-item" id="btnUnsure" aria-label="I don't know how I feel">
-        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect rx='12' width='64' height='64' fill='%2300b894'/><text x='50%' y='54%' font-size='30' text-anchor='middle' fill='white' font-family='Arial'>❓</text></svg>" alt="help icon" />
-        <div class="label" id="lblUnsure">Not sure</div>
+      <button class="float-btn" data-target="#triage" aria-label="Triage">
+        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect rx='12' width='80' height='80' fill='%23ff6666'/><text x='50%' y='55%' font-size='32' text-anchor='middle' fill='%23000' font-family='Arial'>❓</text></svg>" alt="Help" />
+        <span>I don't know</span>
       </button>
-    </div>
 
-    <!-- Medicine Section -->
-    <section id="medSection" class="card" aria-labelledby="medTitle" hidden>
-      <h3 id="medTitle">Medicines</h3>
-      <p class="med-desc" id="medIntro">Search or browse common medicine information. Tap an item to hear details.</p>
-      <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
-        <input id="medSearch" type="search" placeholder="Search medicines..." style="flex:1;padding:10px;border-radius:10px;border:1px solid #eef6ff" aria-label="Search medicines">
-        <button id="medBack" class="big-btn" style="background:#ddd;color:#111">Back</button>
-      </div>
-
-      <div class="medicine-list" id="medList" aria-live="polite"></div>
+      <button class="float-btn" data-target="#tablets" aria-label="Tablets">
+        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80'><rect rx='12' width='80' height='80' fill='%2380ff80'/><text x='50%' y='55%' font-size='32' text-anchor='middle' fill='%23000' font-family='Arial'>⏰</text></svg>" alt="Alarm" />
+        <span>Tablets</span>
+      </button>
     </section>
 
-    <!-- Assistant Section -->
-    <section id="assistSection" class="card" aria-labelledby="assistTitle" hidden>
-      <h3 id="assistTitle">Assistant</h3>
-      <p id="assistIntro" class="med-desc">Tell the assistant how you feel — speak or tap a button. The assistant will suggest simple actions or ask questions.</p>
-
-      <div class="chat-area">
-        <div id="transcript" class="transcript" aria-live="polite">Say or type: "I have a headache" or "I feel dizzy".</div>
-
-        <div style="display:flex;gap:8px;align-items:center">
-          <input id="userText" type="text" placeholder="Type how you feel..." style="flex:1;padding:10px;border-radius:10px;border:1px solid #eef6ff" aria-label="Type how you feel">
-          <button id="sendMsg" class="big-btn">Send</button>
-          <button id="startVoice" class="big-btn voice" title="Start voice input">Speak</button>
-        </div>
-
-        <div class="choices" id="quickChoices" aria-label="Quick choices">
-          <button class="choice">Headache</button>
-          <button class="choice">Dizziness</button>
-          <button class="choice">Stomach ache</button>
-          <button class="choice">Shortness of breath</button>
-        </div>
-
-        <div style="margin-top:8px">
-          <button id="assistBack" class="big-btn" style="background:#ddd;color:#111">Back</button>
-        </div>
+    <section id="medicines" class="panel" aria-labelledby="medicines-heading">
+      <h2 id="medicines-heading">Medicines</h2>
+      <p class="desc">Search for a medicine name and the site will fetch a short summary (from Wikipedia).</p>
+      <div class="medicine-search">
+        <input id="medicine-name" type="text" placeholder="Type medicine name (e.g., Paracetamol)" aria-label="Medicine name" />
+        <button id="medicine-search-btn">Search</button>
       </div>
+      <article id="medicine-result" class="result" aria-live="polite"></article>
     </section>
 
-    <!-- Not sure / branching questions -->
-    <section id="unsureSection" class="card" aria-labelledby="unsureTitle" hidden>
-      <h3 id="unsureTitle">Let's find out</h3>
-      <p id="unsureIntro" class="med-desc">I will ask some simple yes/no questions. You can speak or tap the answers.</p>
+    <section id="assistant" class="panel" aria-labelledby="assistant-heading">
+      <h2 id="assistant-heading">Assistant</h2>
+      <p class="desc">Speak to the assistant or type how you feel. It will suggest simple actions and speak them aloud.</p>
 
-      <div id="branchArea" class="transcript" aria-live="polite">Press Start to begin.</div>
+      <div class="assistant-controls">
+        <textarea id="assistant-input" rows="2" placeholder="Describe how you feel..." aria-label="Describe how you feel"></textarea>
+        <div class="assistant-buttons">
+          <button id="speak-btn">Speak</button>
+          <button id="listen-btn">Start Listening</button>
+          <button id="assistant-submit">Get Advice</button>
+        </div>
+      </div>
 
-      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-        <button id="startBranch" class="big-btn">Start</button>
-        <button id="yesBtn" class="big-btn" style="background:#fff;color:var(--primary);border:1px solid #e6f0fb" disabled>Yes</button>
-        <button id="noBtn" class="big-btn" style="background:#fff;color:var(--primary);border:1px solid #e6f0fb" disabled>No</button>
-        <button id="unsureBack" class="big-btn" style="background:#ddd;color:#111">Back</button>
+      <div id="assistant-output" class="result" aria-live="polite"></div>
+    </section>
+
+    <section id="triage" class="panel" aria-labelledby="triage-heading">
+      <h2 id="triage-heading">Don't know how you feel?</h2>
+      <p class="desc">Answer simple spoken or tapped questions — the assistant will guide you step-by-step.</p>
+      <div id="triage-area" class="triage-area" aria-live="polite">
+        <button id="start-triage">Start</button>
+        <div id="triage-question" class="question" hidden></div>
+        <div id="triage-choices" class="choices" hidden></div>
       </div>
     </section>
 
-    <footer>
-      <small>KeyCare — built for easy use. Use voice and large icons for simpler navigation.</small>
-    </footer>
+    <section id="tablets" class="panel" aria-labelledby="tablets-heading">
+      <h2 id="tablets-heading">Tablets & Schedule</h2>
+      <p class="desc">Add medicines and times. The site will remind you when it's time (notifications + sound) while the page is open. Allow notifications and sound.</p>
+
+      <form id="tablet-form" class="tablet-form" onsubmit="return false;">
+        <label>Medicine name
+          <input id="tab-name" required placeholder="e.g., Paracetamol" />
+        </label>
+        <label>Time
+          <input id="tab-time" type="time" required />
+        </label>
+        <button id="add-tablet">Add reminder</button>
+      </form>
+
+      <ul id="tablet-list" class="tablet-list" aria-live="polite"></ul>
+    </section>
+
+    <section id="settings" class="panel" aria-labelledby="settings-heading">
+      <h2 id="settings-heading">Settings</h2>
+      <p class="desc">Toggle voice and notification preferences.</p>
+      <label><input type="checkbox" id="voice-enabled" checked /> Voice (speak UI prompts)</label><br/>
+      <label><input type="checkbox" id="auto-speak-results" checked /> Auto speak search / results</label><br/>
+      <button id="request-notif">Allow Notifications</button>
+    </section>
   </main>
 
+  <footer class="footer">
+    <small>KeyCare — Simple healthcare helpers. For serious emergencies call local services immediately.</small>
+  </footer>
+
+  <!-- tiny silent audio to play on reminders -->
+  <audio id="alarm-sound" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA="></audio>
+
   <script>
-    /*****************************************************************
-     * KeyCare — Accessible Patient Care (single-file demo)
-     * - Language switching for UI and speech (en, hi, es)
-     * - Voice assistant (TTS & STT with Web Speech API)
-     * - Medicine list with search + voice playback
-     * - Assistant for direct "how I feel" descriptions
-     * - Branching yes/no question flow for "Not sure" to triage symptoms
-     *
-     * NOTE:
-     *  - This is a client-side demo. For real medical advice integrate with clinicians.
-     *  - SpeechRecognition availability varies by browser.
-     *****************************************************************/
+    // KeyCare single-file app.js (in-page)
+    (function(){
+      // --- Utilities and state ---
+      const translations = {
+        en: {
+          siteTitle: "KeyCare",
+          medicines: "Medicines",
+          assistant: "Assistant",
+          dontKnow: "I don't know",
+          tablets: "Tablets",
+          searchPlaceholder: "Search settings or medicines..."
+        },
+        ta: { siteTitle: "கீகேர்", medicines: "மருந்துகள்", assistant: "உதவியாளர்", dontKnow: "எனக்கு தெரியாது", tablets: "மாத்திரைகள்", searchPlaceholder: "அமைப்புகள் அல்லது மருந்துகள் தேடு..." },
+        ml: { siteTitle: "കീകെയർ", medicines: "മരുന്നുകൾ", assistant: "സഹായി", dontKnow: "എനിക്ക് അറിയില്ല", tablets: "മൂല‌കൾ", searchPlaceholder: "ക്രമീകരണങ്ങൾ അല്ലെങ്കിൽ മരുന്നുകൾ തിരയുക..." },
+        kn: { siteTitle: "ಕೀಕೇರ್", medicines: "ಮದ್ದೆ", assistant: "ಸಹಾಯ", dontKnow: "ನನಗೆ ಗೊತ್ತಿಲ್ಲ", tablets: "ಗೊಳಿಕೆಗಳು", searchPlaceholder: "ಸೆಟ್ಟಿಂಗ್ಸ್ ಅಥವಾ ಔಷಧಿಗಳನ್ನು ಹುಡುಕಿ..." },
+        te: { siteTitle: "కీకేర్", medicines: "మందులు", assistant: "సహాయకుడు", dontKnow: "నాకంటే తెలియదు", tablets: "గొలుబులు", searchPlaceholder: "సెట్టింగ్స్ లేదా మందులను శోధించండి..." },
+        es: { siteTitle: "KeyCare", medicines: "Medicamentos", assistant: "Asistente", dontKnow: "No sé", tablets: "Pastillas", searchPlaceholder: "Buscar ajustes o medicamentos..." },
+        fr: { siteTitle: "KeyCare", medicines: "Médicaments", assistant: "Assistant", dontKnow: "Je ne sais pas", tablets: "Comprimés", searchPlaceholder: "Rechercher paramètres o medicamentos..." }
+      };
 
-    // Simple translations (keep short for clarity)
-    const I18N = {
-      en: {
-        welcome: "Welcome to KeyCare",
-        desc: "Large icons, voice assistant and language switch for easy use.",
-        med: "Medicines",
-        assist: "Assistant",
-        unsure: "Not sure",
-        medIntro: "Search or browse common medicine information. Tap an item to hear details.",
-        assistIntro: "Tell the assistant how you feel — speak or tap a button.",
-        unsureIntro: "I will ask some simple yes/no questions. You can speak or tap the answers.",
-        sayOrType: 'Say or type: "I have a headache" or "I feel dizzy".',
-        start: "Start",
-        yes: "Yes",
-        no: "No",
-        back: "Back"
-      },
-      hi: {
-        welcome: "कीकेयर में आपका स्वागत है",
-        desc: "बड़े आइकन, वॉयस असिस्टेंट और भाषा चयन, उपयोग में सरल।",
-        med: "दवाइयाँ",
-        assist: "सहायक",
-        unsure: "पता नहीं",
-        medIntro: "आम दवाओं की जानकारी खोजें या सुनें। किसी आइटम को टैप करें।",
-        assistIntro: "बताइए कैसे महसूस कर रहे हैं — बोलें या टैप करें।",
-        unsureIntro: "मैं कुछ सरल हाँ/नहीं सवाल पूछूँगा। आप बोल सकते हैं या टैप करें।",
-        sayOrType: 'बोलें या लिखें: "मुझे सिर दर्द है" या "मुझे चक्कर आ रहा है"।',
-        start: "शुरू करें",
-        yes: "हाँ",
-        no: "नहीं",
-        back: "वापस"
-      },
-      es: {
-        welcome: "Bienvenido a KeyCare",
-        desc: "Iconos grandes, asistente de voz y cambio de idioma para uso fácil.",
-        med: "Medicinas",
-        assist: "Asistente",
-        unsure: "No sé",
-        medIntro: "Busca o explora información de medicamentos comunes. Toca un elemento para oír detalles.",
-        assistIntro: "Dile al asistente cómo te sientes — habla o toca un botón.",
-        unsureIntro: "Haré preguntas sencillas de sí/no. Puedes hablar o tocar las respuestas.",
-        sayOrType: 'Di o escribe: "Tengo dolor de cabeza" o "Me siento mareado".',
-        start: "Iniciar",
-        yes: "Sí",
-        no: "No",
-        back: "Atrás"
+      const langToSpeech = {
+        en: "en-US",
+        es: "es-ES",
+        fr: "fr-FR",
+        ta: "ta-IN",
+        ml: "ml-IN",
+        kn: "kn-IN",
+        te: "te-IN"
+      };
+
+      let currentLang = localStorage.getItem('kc-lang') || 'en';
+      let voiceEnabled = true;
+      let autoSpeak = true;
+      const $ = id => document.getElementById(id);
+
+      // --- TTS helper ---
+      function speak(text, lang = currentLang) {
+        if (!voiceEnabled) return;
+        if (!('speechSynthesis' in window)) return;
+        const utter = new SpeechSynthesisUtterance(String(text));
+        utter.lang = langToSpeech[lang] || 'en-US';
+        const voices = speechSynthesis.getVoices();
+        const v = voices.find(x => (x.lang || '').startsWith(utter.lang.split('-')[0]));
+        if (v) utter.voice = v;
+        speechSynthesis.cancel();
+        speechSynthesis.speak(utter);
       }
-    };
 
-    // UI elements
-    const langSelect = document.getElementById('langSelect');
-    const brand = document.getElementById('brand');
-    const welcomeTitle = document.getElementById('welcomeTitle');
-    const welcomeDesc = document.getElementById('welcomeDesc');
-    const lblMed = document.getElementById('lblMed');
-    const lblAssist = document.getElementById('lblAssist');
-    const lblUnsure = document.getElementById('lblUnsure');
-    const medSection = document.getElementById('medSection');
-    const assistSection = document.getElementById('assistSection');
-    const unsureSection = document.getElementById('unsureSection');
-    const medList = document.getElementById('medList');
-    const medIntro = document.getElementById('medIntro');
-    const assistIntro = document.getElementById('assistIntro');
-    const unsureIntro = document.getElementById('unsureIntro');
-    const transcript = document.getElementById('transcript');
-    const btnMedicine = document.getElementById('btnMedicine');
-    const btnAssist = document.getElementById('btnAssist');
-    const btnUnsure = document.getElementById('btnUnsure');
-    const medBack = document.getElementById('medBack');
-    const assistBack = document.getElementById('assistBack');
-    const unsureBack = document.getElementById('unsureBack');
-    const medSearch = document.getElementById('medSearch');
-    const topSearch = document.getElementById('topSearch');
-
-    // Assistant controls
-    const userText = document.getElementById('userText');
-    const sendMsg = document.getElementById('sendMsg');
-    const startVoice = document.getElementById('startVoice');
-    const quickChoices = document.getElementById('quickChoices');
-
-    // Branching controls
-    const startBranch = document.getElementById('startBranch');
-    const yesBtn = document.getElementById('yesBtn');
-    const noBtn = document.getElementById('noBtn');
-    const branchArea = document.getElementById('branchArea');
-
-    // Voice toggle
-    const voiceToggle = document.getElementById('voiceToggle');
-
-    // Simple medicine database (sample)
-    const MEDICINES = [
-      { id: 'aspirin', name: {en:'Aspirin', hi:'एस्पिरिन', es:'Aspirina'}, desc: {en:'Pain reliever and fever reducer. Do not give to children with viral symptoms.', hi:'दर्द और बुखार कम करता है। वायरल लक्षणों वाले बच्चों को न दें।', es:'Alivia el dolor y la fiebre. No dar a niños con síntomas virales.'} },
-      { id: 'paracetamol', name: {en:'Paracetamol', hi:'पैरासिटामोल', es:'Paracetamol'}, desc: {en:'Used for pain and fever. Safe at recommended doses.', hi:'दर्द और बुखार के लिए प्रयोग होता है। निर्देशित मात्रा में सुरक्षित।', es:'Para dolor y fiebre. Seguro en dosis recomendadas.'} },
-      { id: 'ibuprofen', name: {en:'Ibuprofen', hi:'इबुप्रोफेन', es:'Ibuprofeno'}, desc: {en:'Anti-inflammatory and pain relief. Take with food to avoid stomach upset.', hi:'सोजिश और दर्द कम करता है। पेट खराब न हो इसके लिए भोजन के साथ लें।', es:'Antiinflamatorio y analgésico. Tomar con comida.'} },
-      { id: 'antacid', name: {en:'Antacid', hi:'एसिडिटी की दवा', es:'Antiácido'}, desc: {en:'Relieves heartburn and indigestion.', hi:'एसिडिटी और अपच से राहत देता है।', es:'Alivia acidez e indigestión.'} },
-    ];
-
-    // State
-    let currentLang = 'en';
-    let voiceEnabled = false;
-    let synth = window.speechSynthesis;
-    let recognition = null;
-    let branchState = { step: 0, responses: [] };
-
-    // Initialize UI texts
-    function applyLanguage(lang){
-      const t = I18N[lang] || I18N.en;
-      currentLang = lang;
-      welcomeTitle.textContent = t.welcome;
-      welcomeDesc.textContent = t.desc;
-      lblMed.textContent = t.med;
-      lblAssist.textContent = t.assist;
-      lblUnsure.textContent = t.unsure;
-      medIntro.textContent = t.medIntro;
-      assistIntro.textContent = t.assistIntro;
-      unsureIntro.textContent = t.unsureIntro;
-      transcript.textContent = t.sayOrType;
-      startBranch.textContent = t.start;
-      yesBtn.textContent = t.yes;
-      noBtn.textContent = t.no;
-      medBack.textContent = t.back;
-      assistBack.textContent = t.back;
-      unsureBack.textContent = t.back;
-      // update medicine names/descriptions in list if visible
-      renderMedicineList();
-      // speak a friendly greeting if voice is enabled
-      if(voiceEnabled) speak(t.welcome);
-    }
-
-    langSelect.addEventListener('change', (e)=> applyLanguage(e.target.value));
-
-    // Simple TTS helper
-    function speak(text, opts = {}){
-      if (!synth) return;
-      if (!text) return;
-      // cancel previous
-      synth.cancel();
-      const utter = new SpeechSynthesisUtterance(text);
-      // choose voice language mapping
-      const langMap = { en:'en-US', hi:'hi-IN', es:'es-ES' };
-      utter.lang = langMap[currentLang] || 'en-US';
-      utter.rate = opts.rate || 1;
-      utter.pitch = opts.pitch || 1;
-      synth.speak(utter);
-    }
-
-    // Setup SpeechRecognition (STT) if available
-    function setupRecognition(){
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        recognition = null;
-        return;
+      // --- UI wiring ---
+      function applyTranslations() {
+        const t = translations[currentLang] || translations.en;
+        $('site-title').textContent = t.siteTitle;
+        document.getElementById('medicines-heading').textContent = t.medicines;
+        document.getElementById('assistant-heading').textContent = t.assistant;
+        document.getElementById('triage-heading').textContent = translations[currentLang]?.dontKnow || translations.en.dontKnow;
+        document.getElementById('tablets-heading').textContent = t.tablets || 'Tablets';
+        $('global-search').placeholder = t.searchPlaceholder || translations.en.searchPlaceholder;
       }
-      recognition = new SpeechRecognition();
-      recognition.lang = {en:'en-US', hi:'hi-IN', es:'es-ES'}[currentLang] || 'en-US';
-      recognition.interimResults = false;
-      recognition.maxAlternatives = 1;
+      applyTranslations();
 
-      recognition.addEventListener('result',(e)=>{
-        const txt = e.results[0][0].transcript.trim();
-        // send to the assistant handler
-        handleUserInput(txt, {voice:true});
+      // Hamburger menu
+      $('hamburger').addEventListener('click', () => {
+        const menu = $('side-menu');
+        const open = menu.getAttribute('aria-hidden') === 'false';
+        menu.setAttribute('aria-hidden', String(!open));
       });
 
-      recognition.addEventListener('end', ()=>{
-        // keep the UI consistent
-        startVoice.classList.remove('active');
-        startVoice.textContent = (currentLang === 'hi') ? 'बोलें' : (currentLang === 'es' ? 'Hablar' : 'Speak');
-      });
-
-      recognition.addEventListener('error',(ev)=>{
-        console.warn('Recognition error', ev);
-        speak((currentLang==='hi') ? 'माफ़ कीजिए, वॉइस उपलब्ध नहीं' : (currentLang==='es' ? 'Lo siento, voz no disponible' : 'Sorry, voice not available'));
-      });
-    }
-
-    // Toggle voice assistant (voice feedback & recognition)
-    voiceToggle.addEventListener('click', ()=>{
-      voiceEnabled = !voiceEnabled;
-      voiceToggle.setAttribute('aria-pressed', String(voiceEnabled));
-      voiceToggle.style.background = voiceEnabled ? '#e6f7ff' : '';
-      if (voiceEnabled){
-        speak(I18N[currentLang].welcome);
-        setupRecognition();
-      } else {
-        if (synth) synth.cancel();
-        if (recognition) recognition.stop();
-      }
-    });
-
-    // Render medicine list
-    function renderMedicineList(filter=''){
-      medList.innerHTML = '';
-      const f = filter.trim().toLowerCase();
-      const filtered = MEDICINES.filter(m => {
-        const name = (m.name[currentLang]||m.name.en).toLowerCase();
-        return name.includes(f) || (m.desc[currentLang]||m.desc.en).toLowerCase().includes(f);
-      });
-      if(filtered.length===0){
-        const empty = document.createElement('div');
-        empty.textContent = (currentLang==='hi') ? 'कोई दवा नहीं मिली' : (currentLang==='es') ? 'No se encontraron medicinas' : 'No medicines found';
-        empty.style.color = 'var(--muted)';
-        medList.appendChild(empty);
-        return;
-      }
-      filtered.forEach(m=>{
-        const md = document.createElement('div');
-        md.className = 'med';
-        md.tabIndex = 0;
-        md.setAttribute('role','button');
-        md.innerHTML = `
-          <img alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'><rect rx='8' width='48' height='48' fill='%230b79d0'/><text x='50%' y='55%' font-size='22' text-anchor='middle' fill='white'>💊</text></svg>">
-          <div style="flex:1">
-            <div class="med-title">${escapeHtml(m.name[currentLang]||m.name.en)}</div>
-            <div class="med-desc">${escapeHtml((m.desc[currentLang]||m.desc.en).slice(0,120))}${(m.desc[currentLang]||m.desc.en).length>120 ? '…' : ''}</div>
-          </div>
-        `;
-        md.addEventListener('click', ()=> {
-          const detail = (m.desc[currentLang]||m.desc.en);
-          // show and speak
-          speak(detail);
-          showToast((m.name[currentLang]||m.name.en) + ': ' + detail);
+      // Floating buttons navigation
+      document.querySelectorAll('.float-btn').forEach(btn=>{
+        btn.addEventListener('click', () => {
+          const target = document.querySelector(btn.dataset.target);
+          if (target) {
+            target.scrollIntoView({behavior:'smooth', block:'start'});
+            speak(btn.textContent.trim());
+          }
         });
-        md.addEventListener('keypress', (ev)=> { if(ev.key === 'Enter') md.click(); });
-        medList.appendChild(md);
       });
-    }
 
-    // Simple toast/message by updating transcript
-    function showToast(txt){
-      transcript.textContent = txt;
-    }
+      // Language selector
+      $('lang').value = currentLang;
+      $('lang').addEventListener('change', (e)=>{
+        currentLang = e.target.value;
+        localStorage.setItem('kc-lang', currentLang);
+        applyTranslations();
+        speak(translations[currentLang]?.siteTitle || 'KeyCare', currentLang);
+      });
 
-    // Escape helper to avoid injection in demo
-    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, (c)=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]) ); }
+      // Settings toggles
+      $('voice-enabled').addEventListener('change', (e)=>{ voiceEnabled = e.target.checked; });
+      $('auto-speak-results').addEventListener('change', (e)=>{ autoSpeak = e.target.checked; });
 
-    // Show/Hide sections
-    function showSection(sectionId){
-      [medSection, assistSection, unsureSection].forEach(s => s.hidden = true);
-      if(sectionId === 'med') medSection.hidden = false;
-      if(sectionId === 'assist') assistSection.hidden = false;
-      if(sectionId === 'unsure') unsureSection.hidden = false;
-      // scroll into view lightly
-      document.getElementById(sectionId + 'Section')?.scrollIntoView({behavior:'smooth', block:'center'});
-    }
+      // Request notifications
+      $('request-notif').addEventListener('click', async ()=>{
+        if (!('Notification' in window)) return alert('Notifications not supported');
+        const p = await Notification.requestPermission();
+        alert('Notification permission: ' + p);
+      });
 
-    // Header buttons
-    btnMedicine.addEventListener('click', ()=> { renderMedicineList(); showSection('med'); speak(I18N[currentLang].med + ' ' + I18N[currentLang].medIntro); });
-    btnAssist.addEventListener('click', ()=> { showSection('assist'); speak(I18N[currentLang].assistIntro); });
-    btnUnsure.addEventListener('click', ()=> { showSection('unsure'); speak(I18N[currentLang].unsureIntro); });
-
-    medBack.addEventListener('click', ()=> { medSection.hidden = true; window.scrollTo({top:0,behavior:'smooth'}); });
-    assistBack.addEventListener('click', ()=> { assistSection.hidden = true; window.scrollTo({top:0,behavior:'smooth'}); });
-    unsureBack.addEventListener('click', ()=> { unsureSection.hidden = true; window.scrollTo({top:0,behavior:'smooth'}); });
-
-    // Medicine search handlers
-    medSearch.addEventListener('input', (e)=> renderMedicineList(e.target.value));
-    topSearch.addEventListener('keypress', (e)=>{
-      if(e.key === 'Enter'){
-        // quick action: if typed "med" open medicines or "assistant" open assist
-        const v = e.target.value.toLowerCase();
-        if(v.includes('med') || v.includes('दवा') || v.includes('medic')) { btnMedicine.click(); medSearch.value=''; }
-        else if(v.includes('assist') || v.includes('सहायक') || v.includes('ayuda')) { btnAssist.click(); topSearch.value=''; }
-        else {
-          speak((currentLang==='hi') ? 'कृपया दवा या सहायक लिखें' : (currentLang==='es' ? 'Escriba medicina o asistente' : 'Please type medicine or assistant'));
+      // Global search
+      $('search-btn').addEventListener('click', ()=>{
+        const q = $('global-search').value.trim();
+        if (!q) {
+          speak('Please type or say something to search');
+          return;
         }
-      }
-    });
+        const ql = q.toLowerCase();
+        if (ql.includes('medic') || ql.includes('pill') || ql.includes('மருந்த') || ql.includes('மாத்திரை')){
+          document.querySelector('#medicines').scrollIntoView({behavior:'smooth'});
+          speak('Opening medicines');
+        } else {
+          $('medicine-name').value = q;
+          $('medicine-search-btn').click();
+        }
+      });
 
-    // Quick choices for assistant
-    quickChoices.addEventListener('click', (e)=>{
-      const btn = e.target.closest('button.choice');
-      if(!btn) return;
-      handleUserInput(btn.textContent);
-    });
-
-    // Send typed message
-    sendMsg.addEventListener('click', ()=> {
-      const txt = userText.value.trim();
-      if(!txt) { speak((currentLang==='hi')?'कृपया कुछ लिखें':(currentLang==='es'?'Por favor escribe algo':'Please type something')); return; }
-      handleUserInput(txt);
-      userText.value = '';
-    });
-
-    // Voice start for assistant (local STT)
-    startVoice.addEventListener('click', ()=>{
-      if(!recognition){
-        setupRecognition();
-        if(!recognition){ speak((currentLang==='hi') ? 'ब्राउज़र वॉइस निधि का समर्थन नहीं करता' : (currentLang==='es' ? 'El navegador no soporta voz' : 'Browser does not support voice')); return; }
-      }
-      recognition.lang = {en:'en-US', hi:'hi-IN', es:'es-ES'}[currentLang] || 'en-US';
-      recognition.start();
-      startVoice.classList.add('active');
-      startVoice.textContent = (currentLang === 'hi') ? 'बोल रहे हैं...' : (currentLang === 'es' ? 'Hablando...' : 'Listening...');
-    });
-
-    // Core assistant logic: a simple rule-based responder for demo.
-    function handleUserInput(text, meta = {}){
-      // show
-      const display = (meta.voice ? '🗣️ ' : '✍️ ') + text;
-      transcript.textContent = display;
-      // speak acknowledgment
-      if (voiceEnabled) speak(text);
-
-      // simple keyword matching to propose actions
-      const t = text.toLowerCase();
-      let reply = '';
-
-      // pain-based
-      if (/headache|head ache|head pain|सिर|हैडक|dolor de cabeza|cef/i.test(t)){
-        reply = (currentLang==='hi') ? 'सिर दर्द के लिए आराम करें, पानी पिएँ और अगर तेज़ हो तो पैरासिटामोल लें। क्या चक्कर भी आ रहे हैं?' :
-                (currentLang==='es') ? 'Para dolor de cabeza, descansa, bebe agua y toma paracetamol si es necesario. ¿También te mareas?' :
-                'For headache: rest, drink water, you can take paracetamol if needed. Are you also dizzy?';
-        speak(reply);
-        transcript.textContent = reply;
-        // offer next quick question
-        return;
+      // --- Medicine lookup using Wikipedia API ---
+      async function searchWikipedia(query){
+        const url = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query)}&utf8=&format=json&origin=*`;
+        const res = await fetch(url);
+        const j = await res.json();
+        if (j.query && j.query.search && j.query.search.length) {
+          return j.query.search[0].title;
+        }
+        return null;
       }
 
-      // dizziness
-      if (/dizz|vertigo|chakk|चक्कर|mareado/i.test(t)){
-        reply = (currentLang==='hi') ? 'अगर चक्कर आते हैं तो बैठ जाएँ या लेट जाएँ। क्या आपने खाना खाया था?' :
-                (currentLang==='es') ? 'Si te mareas, siéntate o acuéstate. ¿Has comido recientemente?' :
-                'If dizzy, sit or lie down. Have you eaten recently?';
-        speak(reply);
-        transcript.textContent = reply;
-        return;
+      async function fetchSummary(title){
+        const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Not found');
+        const j = await res.json();
+        return j.extract || j.description || '';
       }
 
-      // breath
-      if (/breath|breathless|shortness|साँस|respiro|respirar/i.test(t)){
-        reply = (currentLang==='hi') ? 'सांस फूलना गंभीर हो सकता है। बैठकर आराम करें और आवश्यक हो तो किसी के साथ अस्पताल जाएँ। क्या सांस ठीक से चल रही है?' :
-                (currentLang==='es') ? 'La falta de aire puede ser seria. Siéntate y busca ayuda médica si empeora. ¿Puedes respirar bien?' :
-                'Shortness of breath can be serious. Sit and rest, seek medical help if it worsens. Are you able to breathe fine?';
-        speak(reply);
-        transcript.textContent = reply;
-        return;
+      $('medicine-search-btn').addEventListener('click', async ()=>{
+        const q = $('medicine-name').value.trim();
+        const out = $('medicine-result');
+        if (!q) {
+          out.textContent = 'Please enter a medicine name.';
+          speak('Please enter a medicine name');
+          return;
+        }
+        out.textContent = 'Searching...';
+        try {
+          const title = await searchWikipedia(q);
+          if (!title) {
+            out.textContent = 'No result found.';
+            if (autoSpeak) speak('No result found');
+            return;
+          }
+          const summary = await fetchSummary(title);
+          out.innerHTML = `<strong>${title}</strong><p>${summary}</p><p><a href="https://en.wikipedia.org/wiki/${encodeURIComponent(title)}" target="_blank" rel="noopener">Learn more</a></p>`;
+          if (autoSpeak) speak(`${title}. ${summary}`, currentLang);
+        } catch(err){
+          out.textContent = 'Error fetching information.';
+          if (autoSpeak) speak('Error fetching information');
+        }
+      });
+
+      // --- Simple Assistant: rules-based ---
+      function simpleAdviceFromText(text){
+        const t = (text||'').toLowerCase();
+        if (!t) return "I didn't hear anything. Please try saying your problem.";
+        if (t.includes('pain') || t.includes('ache') || t.includes('வலி') || t.includes('வலிப்பு')) {
+          if (t.includes('chest') || t.includes('pressure')) {
+            return "Chest pain can be serious. If severe, call emergency services now. Otherwise rest and seek medical help quickly.";
+          }
+          return "For general pain, rest, take prescribed pain relief if available, and contact a doctor if it worsens.";
+        }
+        if (t.includes('fever') || t.includes('temperature') || t.includes('காய்ச்சல்')) {
+          return "If you have fever, drink water, rest, and take paracetamol if allowed. If fever is high or persistent, consult a doctor.";
+        }
+        if (t.includes('dizzy') || t.includes('faint')) {
+          return "If you feel faint, sit or lie down, loosen tight clothes and get fresh air. If it continues, seek immediate help.";
+        }
+        if (t.includes('cough') || t.includes('cold') || t.includes('காசி')) {
+          return "For cough or cold, rest, warm fluids, and keep hydrated. See a doctor if you have trouble breathing.";
+        }
+        return "I am not sure. Try answering a few quick questions in the 'I don't know' section so I can help.";
       }
 
-      // if user says unclear / don't know -> start branch
-      if (/dont know|don.t know|not sure|pata nahi|पता नहीं|no sé/i.test(t)){
-        // start branching flow
-        btnUnsure.click();
-        startBranchFlow();
-        return;
+      $('assistant-submit').addEventListener('click', ()=>{
+        const text = $('assistant-input').value.trim();
+        const advice = simpleAdviceFromText(text);
+        const out = $('assistant-output');
+        out.textContent = advice;
+        if (autoSpeak) speak(advice);
+      });
+
+      // --- Speech recognition for assistant (if available) ---
+      let recognition = null;
+      let listening = false;
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SR();
+        recognition.lang = langToSpeech[currentLang] || 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (e) => {
+          const tx = e.results[0][0].transcript;
+          $('assistant-input').value = tx;
+          $('assistant-submit').click();
+        };
+        recognition.onend = () => {
+          listening = false;
+          $('listen-btn').textContent = 'Start Listening';
+        };
       }
 
-      // fallback: ask a clarifying question
-      reply = (currentLang==='hi') ? 'कृपया बताइए क्या दर्द है या आप कैसा महसूस कर रहे हैं?' :
-              (currentLang==='es') ? 'Por favor, dime qué dolor o cómo te sientes.' :
-              'Please tell me what hurts or how you feel.';
-      speak(reply);
-      transcript.textContent = reply;
-    }
+      $('listen-btn').addEventListener('click', async ()=>{
+        if (!recognition) {
+          alert('Speech recognition not supported in this browser.');
+          return;
+        }
+        try {
+          recognition.lang = langToSpeech[currentLang] || 'en-US';
+          recognition.start();
+          listening = true;
+          $('listen-btn').textContent = 'Listening... (click to stop)';
+          recognition.onend = () => {
+            listening = false;
+            $('listen-btn').textContent = 'Start Listening';
+          };
+        } catch(err){
+          console.error(err);
+        }
+      });
 
-    // Branching simple decision tree implementation
-    const BRANCH_QUESTIONS = [
-      { q: {en:'Are you in pain right now?', hi:'क्या अभी आपको दर्द है?', es:'¿Tienes dolor ahora?'}, key:'pain' },
-      { q: {en:'Do you have fever?', hi:'क्या बुखार है?', es:'¿Tienes fiebre?'}, key:'fever' },
-      { q: {en:'Are you able to eat or drink?', hi:'क्या आप खाना/पानी ले पा रहे हैं?', es:'¿Puedes comer o beber?'}, key:'eat' },
-      { q: {en:'Is your breathing normal?', hi:'क्या आपकी साँस सामान्य है?', es:'¿Tu respiración es normal?'}, key:'breath' }
-    ];
+      $('speak-btn').addEventListener('click', ()=>{
+        const text = $('assistant-input').value || 'How can I help you?';
+        speak(text);
+      });
 
-    function startBranchFlow(){
-      branchState = { step: 0, responses: [] };
-      // enable yes/no
-      yesBtn.disabled = false; noBtn.disabled = false;
-      askBranchQuestion();
-    }
+      // --- Triage / branched questions ---
+      const triageTree = {
+        id: 'start',
+        question: {
+          en: 'Are you breathing normally?',
+          ta: 'நீங்கள் சாதாரணமாக மூச்சு விடுகிறீர்களா?',
+          ml: 'നിങ്ങൾ സാധാരണമായി ശ്വാസമെടുക്കുന്നുണ്ടോ?',
+          es: '¿Estás respirando normalmente?'
+        },
+        choices: [
+          {text:'Yes', next: 'bleed'},
+          {text:'No', next: 'emergency'}
+        ]
+      };
+      const triageNodes = {
+        emergency: {
+          question: {en:'This may be an emergency. Call emergency services or get help immediately.'},
+          choices: []
+        },
+        bleed: {
+          question: {en:'Do you have heavy bleeding?'},
+          choices: [{text:'Yes', next:'stopBleed'}, {text:'No', next:'pain'}]
+        },
+        stopBleed: {
+          question: {en:'Apply pressure to bleeding area and seek urgent care.'},
+          choices: []
+        },
+        pain: {
+          question: {en:'Do you feel severe pain?'},
+          choices: [{text:'Yes', next:'seekDoctor'}, {text:'No', next:'rest'}]
+        },
+        seekDoctor: { question:{en:'Seek medical help.'}, choices:[] },
+        rest: { question:{en:'Rest and observe. If it gets worse contact a doctor.'}, choices:[] }
+      };
 
-    function askBranchQuestion(){
-      const s = branchState.step;
-      if (s >= BRANCH_QUESTIONS.length){
-        finishBranch();
-        return;
+      let triageCurrent = null;
+      const triageQ = $('triage-question');
+      const triageChoices = $('triage-choices');
+
+      function showTriageNode(id) {
+        triageCurrent = id;
+        const node = (id === 'start') ? triageTree : triageNodes[id];
+        const qtext = (node.question && (node.question[currentLang] || node.question.en)) || '';
+        triageQ.hidden = false;
+        triageChoices.hidden = false;
+        triageQ.textContent = qtext;
+        triageChoices.innerHTML = '';
+        if (!node.choices || node.choices.length===0) {
+          const ok = document.createElement('button');
+          ok.textContent = 'OK';
+          ok.addEventListener('click', ()=>{ triageQ.hidden=true; triageChoices.hidden=true; });
+          triageChoices.appendChild(ok);
+          speak(qtext);
+          return;
+        }
+        for (const c of node.choices) {
+          const b = document.createElement('button');
+          b.textContent = c.text;
+          b.addEventListener('click', ()=> {
+            showTriageNode(c.next);
+          });
+          triageChoices.appendChild(b);
+        }
+        speak(qtext);
       }
-      const qObj = BRANCH_QUESTIONS[s];
-      const qText = qObj.q[currentLang] || qObj.q.en;
-      branchArea.textContent = qText;
-      if(voiceEnabled) speak(qText);
-    }
 
-    yesBtn.addEventListener('click', ()=> { branchState.responses.push(true); branchState.step += 1; askBranchQuestion(); });
-    noBtn.addEventListener('click', ()=> { branchState.responses.push(false); branchState.step += 1; askBranchQuestion(); });
+      $('start-triage').addEventListener('click', ()=> showTriageNode('start'));
 
-    startBranch.addEventListener('click', ()=> {
-      startBranchFlow();
-    });
+      // --- Tablet scheduler (local reminders while page is open) ---
+      const tabletListEl = $('tablet-list');
+      const ALARMS = [];
 
-    function finishBranch(){
-      // disable buttons
-      yesBtn.disabled = true; noBtn.disabled = true;
-      // simple triage: if severe signs -> recommend urgent care
-      const resp = branchState.responses;
-      // if pain and fever or breath false -> escalate
-      const hasPain = resp[0];
-      const hasFever = resp[1];
-      const canEat = resp[2];
-      const breathOk = resp[3];
-
-      let outcome = '';
-      if (!breathOk || (hasPain && hasFever)){
-        outcome = (currentLang==='hi') ? 'यह गंभीर हो सकता है। कृपया निकटतम स्वास्थ्य केंद्र या अस्पताल पर जाएँ।' :
-                  (currentLang==='es') ? 'Esto puede ser serio. Por favor acude a un centro de salud o emergencia.' :
-                  'This may be serious. Please go to the nearest health center or emergency department.';
-      } else if (hasPain && !hasFever){
-        outcome = (currentLang==='hi') ? 'दर्द के लिए आराम करें, पानी पिएँ और आवश्यकता पर पैरासिटामोल लें।' :
-                  (currentLang==='es') ? 'Para el dolor, descansa, hidrátate y toma paracetamol si es necesario.' :
-                  'For pain: rest, hydrate, take paracetamol if needed.';
-      } else if (!canEat){
-        outcome = (currentLang==='hi') ? 'आप खाना नहीं ले पा रहे हैं। यदि लक्षण बने रहें तो डॉक्टर से संपर्क करें।' :
-                  (currentLang==='es') ? 'No puedes comer. Si los síntomas persisten, consulta a un médico.' :
-                  'You are unable to eat. If symptoms persist, consult a doctor.';
-      } else {
-        outcome = (currentLang==='hi') ? 'लक्षण हल्के लगते हैं। आराम करें, हाइड्रेट रहें और निगरानी रखें।' :
-                  (currentLang==='es') ? 'Los síntomas parecen leves. Descansa, hidrátate y vigila.' :
-                  'Symptoms seem mild. Rest, hydrate, and monitor.';
+      function renderTablets(){
+        const list = JSON.parse(localStorage.getItem('kc-tablets') || '[]');
+        tabletListEl.innerHTML = '';
+        list.forEach((item, idx) => {
+          const li = document.createElement('li');
+          li.innerHTML = `<div><strong>${escapeHtml(item.name)}</strong><div>${item.time}</div></div>`;
+          const rm = document.createElement('button');
+          rm.textContent = 'Delete';
+          rm.addEventListener('click', ()=>{
+            list.splice(idx,1);
+            localStorage.setItem('kc-tablets', JSON.stringify(list));
+            renderTablets();
+            scheduleAll();
+          });
+          li.appendChild(rm);
+          tabletListEl.appendChild(li);
+        });
       }
 
-      branchArea.textContent = outcome;
-      if(voiceEnabled) speak(outcome);
-    }
+      function scheduleAll(){
+        ALARMS.forEach(t => clearTimeout(t));
+        ALARMS.length = 0;
+        const list = JSON.parse(localStorage.getItem('kc-tablets') || '[]');
+        list.forEach(item => {
+          scheduleReminder(item);
+        });
+      }
 
-    // Hamburger menu - simple alert for demo
-    document.getElementById('hamburger').addEventListener('click', ()=>{
-      const menuText = (currentLang==='hi') ? 'मेनू: दवाइयाँ, असिस्टेंट, सहायता' : (currentLang==='es') ? 'Menú: Medicinas, Asistente, Ayuda' : 'Menu: Medicines, Assistant, Help';
-      alert(menuText);
-    });
+      function scheduleReminder(item){
+        const now = new Date();
+        const [hh,mm] = item.time.split(':').map(Number);
+        const next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hh, mm, 0, 0);
+        if (next <= now) next.setDate(next.getDate()+1);
+        const ms = next - now;
+        const t = setTimeout(async ()=>{
+          notify(`${item.name} - time to take your tablet`);
+          const a = $('alarm-sound');
+          try{ await a.play(); }catch(e){}
+          scheduleReminder(item);
+        }, ms);
+        ALARMS.push(t);
+      }
 
-    // Initial setup
-    applyLanguage(currentLang);
+      function notify(message){
+        if ('Notification' in window && Notification.permission === 'granted') {
+          new Notification('KeyCare Reminder', {body: message});
+        } else {
+          alert(message);
+        }
+        if (voiceEnabled) speak(message);
+      }
 
-    // Preload recognition if voice enabled by default false
-    // setupRecognition();
+      $('add-tablet').addEventListener('click', ()=>{
+        const name = $('tab-name').value.trim();
+        const time = $('tab-time').value;
+        if (!name || !time) return alert('Please enter name and time');
+        const list = JSON.parse(localStorage.getItem('kc-tablets') || '[]');
+        list.push({name, time});
+        localStorage.setItem('kc-tablets', JSON.stringify(list));
+        $('tab-name').value = '';
+        $('tab-time').value = '';
+        renderTablets();
+        scheduleAll();
+        speak('Reminder added');
+      });
 
-    // keyboard accessibility: make float items respond to Enter key
-    document.querySelectorAll('.float-item').forEach(fn => {
-      fn.addEventListener('keypress', (e)=> { if(e.key==='Enter') fn.click(); });
-    });
+      function escapeHtml(str){
+        return str.replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m]));
+      }
 
-    // Friendly: announce available features on first load if voice enabled
-    window.addEventListener('load', ()=> {
-      // initial render of medicines in background
-      renderMedicineList();
-    });
+      // initialize
+      renderTablets();
+      scheduleAll();
+      speak('Welcome to KeyCare. Use large buttons to choose a feature.', currentLang);
 
+      // make sure voices refreshed
+      if (typeof speechSynthesis !== 'undefined') {
+        speechSynthesis.onvoiceschanged = () => {};
+      }
+
+      // Provide keyboard short-cuts and focus improvements for low-literacy:
+      document.addEventListener('keydown', (e)=>{
+        if (e.key === '1') document.querySelector('.float-btn[data-target="#medicines"]').click();
+        if (e.key === '2') document.querySelector('.float-btn[data-target="#assistant"]').click();
+        if (e.key === '3') document.querySelector('.float-btn[data-target="#triage"]').click();
+        if (e.key === '4') document.querySelector('.float-btn[data-target="#tablets"]').click();
+      });
+    })();
   </script>
 </body>
 </html>
